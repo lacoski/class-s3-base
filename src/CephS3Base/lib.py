@@ -33,6 +33,23 @@ class cephS3API(object):
         )
         self.connection = s3client
 
+    def create_bucket(self, name):
+        try:
+            self.connection.create_bucket(Bucket=name)
+        except ClientError as e:            
+            print("Fall: {ex}".format(ex=e))
+            return False
+    
+    def list_bucket(self):
+        try:
+            response = self.connection.list_buckets()
+            buckets = [bucket['Name'] for bucket in response['Buckets']]
+            # Print out the bucket list
+            print("Bucket List: %s" % buckets)
+        except ClientError as e:            
+            print("Fall: {ex}".format(ex=e))
+            return False
+
     def get_s3_config(self):
         """
             get seup config s3 bucket
@@ -42,20 +59,22 @@ class cephS3API(object):
         print(self.bucket_name)
         print(self.s3_host)
 
+    def get_name_id_identify(self):
+        idUser = self.connection.get_caller_identity()["Account"]
+        print(idUser)
+
     def is_connected(self):
         """
         Tra lai trang thai ket noi
         return: (true/false)
         """
         try:            
-            response = self.connection.list_objects(
-                Bucket=self.bucket_name,
-            )
+            response = self.connection.list_buckets()
             print("Connect to S3 storage success!")
             return True
         except ClientError as e:            
             print("Fall: {ex}".format(ex=e))
-            return False        
+            return False                  
 
     def s3_ls(self):
         """
