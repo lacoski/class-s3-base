@@ -24,24 +24,27 @@ class ProgressPercentage(object):
             sys.stdout.flush()
 
 def main():
-    access_key = '1N8I3SDW0MIDUR0Z5MP8'
-    secret_key = 'ecBlpo1SyN72KSo4I7jrj0KvXLEOsTNQzOoWATKS'
-    s3_host = 'http://192.168.20.52:7480'
+    access_key = 'JJDEGLZSRPEM355GJC0O'
+    secret_key = 'DkECQdTNxOeORL5RpFSX9gdxwaeFSptUKoQ75DvU'
+    s3_host = 'http://192.168.2.134:7480'
 
-    bucket_name = 's3cloud'    
+    bucket_name = 's3cloud'   
+    # s3client = boto3.client('cognito-identity',
+    #     aws_secret_access_key = access_key,
+    #     aws_access_key_id = secret_key,
+    #     endpoint_url = s3_host,
+    # )      
+      
+    s3 = boto3.resource('s3',
+            aws_secret_access_key = secret_key,
+            aws_access_key_id = access_key,
+            endpoint_url = s3_host,
+        )
+    bucket_target = s3.Bucket('s3cloud')
+    print(bucket_target)
+    for obj in bucket_target.objects.filter(Prefix='/user_a/'):
+        print('{0}:{1}'.format(bucket_target.name, obj.key))
 
-    # s3client = boto3.client('s3',
-    #     aws_secret_access_key = secret_key,
-    #     aws_access_key_id = access_key,
-    #     endpoint_url = s3_host) 
-
-    # s3client.upload_file(
-    #     "/home/lacoski/Downloads/CSDL.zip", bucket_name, "CSDL.zip",
-    #     Callback=ProgressPercentage("/home/lacoski/Downloads/CSDL.zip")
-    # )
-    test = '/home/lacoski/Downloads/CSDL.zip'
-    name = test.split('/')
-    print(name[-1])
 
 if __name__ == '__main__':
     main() 

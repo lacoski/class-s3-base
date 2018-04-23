@@ -14,7 +14,7 @@ from .helper import (
 import boto3
 from botocore.exceptions import ClientError
 import os.path
-
+import botocore
 
 class cephS3API(object):
     access_key = ACCESS_KEY
@@ -22,7 +22,8 @@ class cephS3API(object):
     s3_host = S3_HOST
     bucket_name = BUCKET_NAME
     current_direct = ''
-    connection = None
+    client_s3 = None
+    resource_s3 = None
     helper_class = helper_cephS3API()
 
     def __init__(self):        
@@ -31,18 +32,26 @@ class cephS3API(object):
             aws_access_key_id = self.access_key,
             endpoint_url = self.s3_host
         )
-        self.connection = s3client
+       
+        s3resource = boto3.resource('s3',
+            aws_secret_access_key = self.secret_key,
+            aws_access_key_id = self.access_key,
+            endpoint_url = self.s3_host
+        )
+
+        self.client_s3 = s3client
+        self.resource_s3 = s3resource
 
     def create_bucket(self, name):
         try:
-            self.connection.create_bucket(Bucket=name)
+            self.client_s3.create_bucket(Bucket=name)
         except ClientError as e:            
             print("Fall: {ex}".format(ex=e))
             return False
     
     def list_bucket(self):
         try:
-            response = self.connection.list_buckets()
+            response = self.client_s3.list_buckets()
             buckets = [bucket['Name'] for bucket in response['Buckets']]
             # Print out the bucket list
             print("Bucket List: %s" % buckets)
@@ -60,8 +69,7 @@ class cephS3API(object):
         print(self.s3_host)
 
     def get_name_id_identify(self):
-        idUser = self.connection.get_caller_identity()["Account"]
-        print(idUser)
+        pass
 
     def is_connected(self):
         """
@@ -69,7 +77,7 @@ class cephS3API(object):
         return: (true/false)
         """
         try:            
-            response = self.connection.list_buckets()
+            response = self.client_s3.list_buckets()
             print("Connect to S3 storage success!")
             return True
         except ClientError as e:            
@@ -81,16 +89,18 @@ class cephS3API(object):
         ls bucket
         return: list obj
         """
+        #bucket_target = s3.Bucket('s3cloud')
         list_s3_object = []
-        response = self.connection.list_objects(
+        response = self.client_s3.list_objects(
             Bucket=self.bucket_name,
         )
         for item in response['Contents']:
+            print(item)
             temp_obj = s3_object(item['Size'], item['Key'], item['LastModified'], item['Owner'])
             list_s3_object.append(temp_obj)
 
-        for item in list_s3_object:
-            item.show_object()
+        # for item in list_s3_object:
+        #     item.show_object()
 
     def s3_cd(self):
         pass
@@ -104,19 +114,48 @@ class cephS3API(object):
     def s3_rm(self):
         pass
 
-    def s3_upload(self, path_to_file):       
+    def s3_cat(self, key_path):        
+        response = self.client_s3.get_object(Bucket=self.bucket_name,Key=key_path)
+        print(response)
+
+    def s3_upload(self, path_to_file, metadata_extend = None, key_path = ''):       
         if not os.path.isfile(path_to_file):
             print("Not found File")
         else: 
-            file_name = self.helper_class.split_path_to_name(path_to_file)
+            file_name = ''
+            if not key_path:
+                file_name = self.helper_class.split_path_to_name(path_to_file)
+            else: 
+                file_name = key_path
             #print(file_name)
-            self.connection.upload_file(
+            if metadata_extend:
+                self.client_s3.upload_file(
+                    path_to_file, self.bucket_name, file_name,
+                    ExtraArgs={"Metadata": metadata_extend},
+                    Callback=ProgressPercentage(path_to_file)
+                )
+            else:
+                self.client_s3.upload_file(
+                    path_to_file, self.bucket_name, file_name,                    
+                    Callback=ProgressPercentage(path_to_file)
+                )
+
+    def s3_upload_with_metadata(self, path_to_file, metadata_extend = None, key_path = ''):       
+        if not os.path.isfile(path_to_file):
+            print("Not found File")
+        else:                       
+            file_name = key_path
+            #print(file_name)
+            self.client_s3.upload_file(
                 path_to_file, self.bucket_name, file_name,
+                ExtraArgs={"Metadata": {"mykey": "myvalue"}},
                 Callback=ProgressPercentage(path_to_file)
-            )
+            )            
+
+
 
     def s3_generate_download_url(self, name_file):
-        url = self.connection.generate_presigned_url(
+        url = self.client_s3.generate_presigned_url(
             ClientMethod='get_object',
             Params={
                 'Bucket': self.bucket_name,
