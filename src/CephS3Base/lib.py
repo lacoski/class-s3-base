@@ -9,7 +9,8 @@ from .structures import (
     ProgressPercentage
 )
 from .helper import (
-    helper_cephS3API
+    helper_cephS3API,
+    helper_cephS3Directory
 )
 import boto3
 from botocore.exceptions import ClientError
@@ -94,6 +95,7 @@ class cephS3API(object):
         response = self.client_s3.list_objects(
             Bucket=self.bucket_name,
         )
+        #print(response)
         for item in response['Contents']:
             print(item)
             temp_obj = s3_object(item['Size'], item['Key'], item['LastModified'], item['Owner'])
@@ -164,3 +166,106 @@ class cephS3API(object):
         )
         print(url)
         return url
+
+
+class cephS3Directory(object):
+    list_item = [
+        '/UserA/object-1.PNG', 
+        '/UserA/object-2.PNG',
+        '/UserA/object-3.PNG',
+        '/UserA/home/object-4.PNG',
+        '/UserA/home/object-5.PNG',
+        '/UserA/Download/object-6.PNG',
+        '/UserA/Download/object-7.PNG',
+        '/UserA/test/object-A.PNG',
+        '/UserA/test/check/object-8.PNG',
+        '/UserA/test/check/object-9.PNG',                
+    ]
+    helper = helper_cephS3Directory()
+    current_direct = ''        
+    def __init__(self):
+        pass        
+
+    def get_level_path(self, path_to):
+        split_object = path_to.split('/')
+        level = len(split_object) - 1
+        return level  
+    
+    def check_path_exist(self, full_path_to):        
+        for item in self.list_item:
+            if item.startswith(full_path_to):
+                return True
+        return False
+
+    def get_list_path(self, path_to=''):
+        if not path_to:
+            path_to = self.current_direct
+    
+        list_path = []
+        level_path = self.get_level_path(path_to)
+        for item in self.list_item:
+            if not path_to in item:
+                continue
+            split_object = item.split('/')
+            try:
+                item_get = split_object[level_path] 
+            except IndexError:
+                item_get = None
+
+            if not item_get in list_path and item_get:
+                list_path.append(item_get)
+        return list_path
+    
+    def valid_path(self, path_to=''):
+        if not path_to.startswith("/"):
+            path_to = '/' + self.current_direct + path_to
+        if not path_to.endswith("/"):
+            path_to = path_to + '/'
+        return path_to
+
+    def cd(self, path_to=''):
+        print('cd: ---')
+        if not path_to:
+            self.current_direct = ''
+        else:
+            if not path_to.startswith("/"):
+                path_to = self.valid_path(path_to)
+            if self.check_path_exist(path_to):                
+                self.current_direct = self.valid_path(path_to)
+            else:
+                print('Path not found')
+            
+
+    def ls(self, path=''):
+        print('ls : ---')
+        for item in self.get_list_path(path):
+            print(item)
+
+    def rm(self, path_to):
+        if not path_to.startswith("/"):
+            path_to = self.current_direct + path_to
+        if self.check_path_exist(path_to):
+            rm_list = []
+            for item in self.list_item:
+                if item.startswith(path_to):
+                    rm_list.append(item)
+                    #self.list_item.remove(item)
+            self.list_item = self.helper.remove_sub_list(self.list_item, rm_list)
+        print('rm done!')
+        
+    def pwd(self):
+        print('pwd : ---')
+        if self.current_direct:
+            print('/')
+        print(self.current_direct)            
+
+    def mv(self):
+        pass 
+
+    def show_list_object(self):
+        if not self.list_item:
+            print("List None")
+            return
+        for item in self.list_item:
+            print(item)
+    

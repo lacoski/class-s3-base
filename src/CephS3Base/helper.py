@@ -3,3 +3,7 @@ class helper_cephS3API(object):
         name = path_to_file.split('/')
         #print(name)
         return name[-1]
+
+class helper_cephS3Directory(object):
+    def remove_sub_list(self, a, b):
+        return [x for x in a if x not in b]
