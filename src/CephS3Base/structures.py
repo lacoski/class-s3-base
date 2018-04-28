@@ -6,17 +6,25 @@ class s3_object(object):
     LastModified = None
     Owner = None
     Size = ''
-    Key = ''    
-    def __init__(self, s_Size='', s_LastModified=None, s_Owner=None, s_Key=''):
+    Key = ''  
+    Level = ''
+    def __init__(self, s_Size='', s_LastModified=None, s_Owner=None, s_Key='', i_Level=0):
         self.LastModified = s_LastModified
         self.Size = s_Size
         self.Key = s_Key
         self.Owner = s_Owner
+        self.Level = i_Level
 
     def show_object(self):
         print("{name} - {size} - {dt} - {owner}".format(name=self.Key, size=self.Size, 
                                                         dt=self.LastModified, owner=self.Owner))
-
+    def get_key_level(self):
+        print
+        try:
+            key_level = self.Key.split('/')[self.Level]
+        except IndexError:
+            key_level = ''
+        return key_level
 
 class ProgressPercentage(object):
     def __init__(self, filename):
