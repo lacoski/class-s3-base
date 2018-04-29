@@ -18,8 +18,7 @@ class s3_object(object):
     def show_object(self):
         print("{name} - {size} - {dt} - {owner}".format(name=self.Key, size=self.Size, 
                                                         dt=self.LastModified, owner=self.Owner))
-    def get_key_level(self):
-        print
+    def get_key_level(self):        
         try:
             key_level = self.Key.split('/')[self.Level]
         except IndexError:
